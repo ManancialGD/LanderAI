@@ -7,9 +7,6 @@
 
 namespace VideojogosLusofona.LusoLander
 {
-    /// <summary>
-    /// Possible rotation inputs.
-    /// </summary>
     public enum RotationInput
     {
         Left = -1,
