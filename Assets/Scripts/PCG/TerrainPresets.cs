@@ -7,21 +7,11 @@ public class TerrainPresets : ScriptableObject
     public TerrainType[] regions;
 
     [Header("Generation Settings")]
-    public float roughness = 0.7f;
-    public float initialHeight = 2f;
-    public float mountainHeight = 1.5f;
-    public float terrainScale = 10f;
-    public float baseLevel = 0.2f;
-
-    public void ApplyToGenerator(MapGenerator generator)
-    {
-        generator.regions = regions;
-        generator.roughness = roughness;
-        generator.initialHeight = initialHeight;
-        generator.mountainHeight = mountainHeight;
-        generator.terrainScale = terrainScale;
-        generator.baseLevel = baseLevel;
-    }
+    [SerializeField] private float roughness = 0.7f;
+    [SerializeField] private float initialHeight = 2f;
+    [SerializeField] private float mountainHeight = 1.5f;
+    [SerializeField] private float terrainScale = 10f;
+    [SerializeField] private float baseLevel = 0.2f;
 
     public static TerrainType[] GetMoonPreset()
     {

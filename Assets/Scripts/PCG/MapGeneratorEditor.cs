@@ -1,5 +1,7 @@
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
+using System.Reflection;
 
 [CustomEditor(typeof(MapGenerator))]
 public class MapGeneratorEditor : Editor
@@ -13,8 +15,11 @@ public class MapGeneratorEditor : Editor
         DrawDefaultInspector();
         bool hasChanged = EditorGUI.EndChangeCheck();
 
-        // Só gerar automaticamente se estiver em play mode e autoUpdate estiver ativo
-        if (hasChanged && mapGen.autoUpdate && Application.isPlaying)
+        // Só gerar automaticamente se estiver em play mode e autoUpdate estiver ativo, usando reflexão para acessar autoUpdate
+        FieldInfo autoUpdateField = typeof(MapGenerator).GetField("autoUpdate", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+        bool autoUpdate = autoUpdateField != null && (bool)autoUpdateField.GetValue(mapGen);
+
+        if (hasChanged && autoUpdate && Application.isPlaying)
         {
             mapGen.GenerateMap();
         }
@@ -39,7 +44,9 @@ public class MapGeneratorEditor : Editor
 
         if (GUILayout.Button("Randomize Seed"))
         {
-            mapGen.seed = Random.Range(0, 10000);
+            FieldInfo seedField = typeof(MapGenerator).GetField("seed", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+            seedField?.SetValue(mapGen, Random.Range(0, 10000));
+
             try
             {
                 mapGen.GenerateMap();
@@ -59,27 +66,32 @@ public class MapGeneratorEditor : Editor
         EditorGUILayout.LabelField("Quick Presets:", EditorStyles.boldLabel);
         EditorGUILayout.BeginHorizontal();
 
+        FieldInfo regionsField = typeof(MapGenerator).GetField("regions", BindingFlags.NonPublic | BindingFlags.Instance);
+        FieldInfo roughnessField = typeof(MapGenerator).GetField("roughness", BindingFlags.NonPublic | BindingFlags.Instance);
+        FieldInfo baseLevelField = typeof(MapGenerator).GetField("baseLevel", BindingFlags.NonPublic | BindingFlags.Instance);
+
         if (GUILayout.Button("Moon"))
         {
-            mapGen.regions = TerrainPresets.GetMoonPreset();
-            mapGen.roughness = 0.8f;
-            mapGen.baseLevel = 0.1f;
+
+            regionsField?.SetValue(mapGen, TerrainPresets.GetMoonPreset());
+            roughnessField?.SetValue(mapGen, 0.4f);
+            baseLevelField?.SetValue(mapGen, 0.1f);
             EditorUtility.SetDirty(mapGen);
         }
 
         if (GUILayout.Button("Earth"))
         {
-            mapGen.regions = TerrainPresets.GetEarthPreset();
-            mapGen.roughness = 0.5f;
-            mapGen.baseLevel = 0.3f;
+            regionsField?.SetValue(mapGen, TerrainPresets.GetEarthPreset());
+            roughnessField?.SetValue(mapGen, 0.5f);
+            baseLevelField?.SetValue(mapGen, 0.3f);
             EditorUtility.SetDirty(mapGen);
         }
 
         if (GUILayout.Button("Mars"))
         {
-            mapGen.regions = TerrainPresets.GetMarsPreset();
-            mapGen.roughness = 0.6f;
-            mapGen.baseLevel = 0.2f;
+            regionsField?.SetValue(mapGen, TerrainPresets.GetMarsPreset());
+            roughnessField?.SetValue(mapGen, 0.6f);
+            baseLevelField?.SetValue(mapGen, 0.2f);
             EditorUtility.SetDirty(mapGen);
         }
 
@@ -101,13 +113,17 @@ public class MapGeneratorEditor : Editor
         );
 
         // Mostrar informações do mapa atual
-        if (mapGen.regions != null && mapGen.regions.Length > 0)
+        if (regionsField.GetValue(mapGen) != null && ((TerrainType[])regionsField.GetValue(mapGen)).Length > 0)
         {
+            FieldInfo mapSizeField = typeof(MapGenerator).GetField("mapSize", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+            int mapSizeValue = mapSizeField != null ? (int)mapSizeField.GetValue(mapGen) : 0;
+
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField($"Regiões configuradas: {mapGen.regions.Length}");
-            EditorGUILayout.LabelField($"Tamanho do mapa: {mapGen.mapSize}x{mapGen.mapSize}");
-            EditorGUILayout.LabelField($"Base Level: {mapGen.baseLevel:F2}");
-            EditorGUILayout.LabelField($"Roughness: {mapGen.roughness:F2}");
+            EditorGUILayout.LabelField($"Regiões configuradas: {((TerrainType[])regionsField.GetValue(mapGen)).Length}");
+            EditorGUILayout.LabelField($"Tamanho do mapa: {mapSizeValue}x{mapSizeValue}");
+            EditorGUILayout.LabelField($"Base Level: {baseLevelField.GetValue(mapGen):F2}");
+            EditorGUILayout.LabelField($"Roughness: {roughnessField.GetValue(mapGen):F2}");
         }
     }
 }
+# endif
