@@ -1,10 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Author: Nuno Fachada
- * */
-
 using UnityEngine;
 
 namespace VideojogosLusofona.LusoLander
@@ -12,45 +5,136 @@ namespace VideojogosLusofona.LusoLander
     public class LanderControl : MonoBehaviour
     {
         [SerializeField]
-        [Tooltip("Sprite to use when lander is NOT using thrusters")]
         private Sprite landerNoThrusters;
 
         [SerializeField]
-        [Tooltip("Sprite to use when lander is using thrusters")]
         private Sprite landerWithThrusters;
 
         [SerializeField]
-        [Tooltip("Thrust/force to apply when pressing up")]
-        private float thrust = 40.0f;
+        private float thrust = 25.0f;
 
         [SerializeField]
-        [Tooltip("Rotation (degrees/second) to apply when pressing the right or left")]
-        private float rotationSpeed = 35f;
+        private float rotationSpeed = 120f;
 
-        // Reference to the rigid body
+        [SerializeField]
+        private bool allowAIControl = false;
+
+        [SerializeField]
+        public float combustivel = 100f;
+
+        [SerializeField]
+        public bool aterrou = false;
+
+        [SerializeField]
+        public bool colidiu = false;
+
         private Rigidbody2D rb;
-
-        // Reference to the sprite renderer
         private SpriteRenderer sr;
-
-        // The most recent rotate input
         private RotationInput rotationInput = RotationInput.None;
-
-        // The most recent thrust input
         private bool thrustInput = false;
+        private RotationInput aiRotationInput = RotationInput.None;
+        private bool aiThrustInput = false;
 
-        // Start is called before the first frame update
         private void Start()
         {
-            // Get references to the necessary components
             rb = GetComponent<Rigidbody2D>();
             sr = GetComponent<SpriteRenderer>();
         }
 
-        // Update is called once per frame
-        private void Update()
+        private void FixedUpdate()
         {
-            // Determine if it's necessary to swap sprites
+            if (thrustInput)
+            {
+                Vector2 force = thrust * (Vector2)transform.up;
+                rb.AddForce(force, ForceMode2D.Force);
+            }
+
+            if (rotationInput != RotationInput.None)
+            {
+                float torque = -(int)rotationInput * rotationSpeed;
+                rb.AddTorque(torque, ForceMode2D.Force);
+            }
+        }
+
+        public void SetAIControl(bool enabled)
+        {
+            allowAIControl = enabled;
+        }
+
+        public void SetAIInputs(RotationInput rotation, bool thrust)
+        {
+            aiRotationInput = rotation;
+            aiThrustInput = thrust;
+        }
+
+        public void SetAIInputs(float horizontalInput, bool thrust)
+        {
+            aiRotationInput = (RotationInput)
+                Mathf.RoundToInt(Mathf.Clamp(horizontalInput, -1f, 1f));
+            aiThrustInput = thrust;
+        }
+
+        public Vector2 GetVelocity() => rb != null ? rb.linearVelocity : Vector2.zero;
+
+        public Vector2 GetPosition() => transform.position;
+
+        public float GetRotation() => transform.eulerAngles.z;
+
+        public bool IsAIControlled() => allowAIControl;
+
+        public void ResetarEstado()
+        {
+            combustivel = 100f;
+            aterrou = false;
+            colidiu = false;
+        }
+
+        void OnCollisionEnter2D(Collision2D collision)
+        {
+            if (collision.gameObject.CompareTag("Ground"))
+            {
+                float velocidadeImpacto = rb.linearVelocity.magnitude;
+                if (velocidadeImpacto < 3f && Mathf.Abs(transform.eulerAngles.z) < 15f)
+                {
+                    aterrou = true;
+                }
+                else
+                {
+                    colidiu = true;
+                }
+            }
+        }
+
+        void Update()
+        {
+            if (thrustInput && combustivel > 0)
+            {
+                combustivel -= Time.deltaTime * 10f;
+                combustivel = Mathf.Max(0, combustivel);
+            }
+
+            if (allowAIControl)
+            {
+                rotationInput = aiRotationInput;
+                thrustInput = aiThrustInput && combustivel > 0;
+            }
+            else
+            {
+                float horizontal = 0f;
+                float vertical = 0f;
+
+                if (Input.GetKey(KeyCode.A))
+                    horizontal = -1f;
+                else if (Input.GetKey(KeyCode.D))
+                    horizontal = 1f;
+
+                if (Input.GetKey(KeyCode.W) && combustivel > 0)
+                    vertical = 1f;
+
+                rotationInput = (RotationInput)Mathf.Round(horizontal);
+                thrustInput = vertical > 0;
+            }
+
             if (thrustInput && sr.sprite == landerNoThrusters)
             {
                 sr.sprite = landerWithThrusters;
@@ -58,33 +142,6 @@ namespace VideojogosLusofona.LusoLander
             else if (!thrustInput && sr.sprite == landerWithThrusters)
             {
                 sr.sprite = landerNoThrusters;
-            }
-
-            // Check if the user pressed any valid key, and if so, capture them
-            rotationInput =
-                (RotationInput)Mathf.Round(Input.GetAxisRaw("Horizontal"));
-
-            thrustInput = Input.GetAxisRaw("Vertical") >  0;
-        }
-
-        // Frame-rate independent Update for physics calculations
-        private void FixedUpdate()
-        {
-            // Consider the timeScale if using fast forward to train the AI
-            float fixedDeltaTime = Time.fixedDeltaTime * Time.timeScale;
-
-            if (thrustInput)
-            {
-                // Apply dynamic thrust
-                rb.AddForce(thrust * fixedDeltaTime * transform.up);
-            }
-
-            if (rotationInput != RotationInput.None)
-            {
-                // Apply kinematic rotation
-                rb.SetRotation(
-                    rb.rotation
-                    - (int)rotationInput * rotationSpeed * fixedDeltaTime);
             }
         }
     }

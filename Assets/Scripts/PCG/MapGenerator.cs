@@ -34,6 +34,7 @@ public class MapGenerator : MonoBehaviour
     [Header("Collision Settings")]
     public float colliderHeight = 1f;
     public bool generateColliders = true;
+    public bool force2DColliders = true;
 
     [Header("Mesh Settings")]
     public Material terrainMaterial;
@@ -338,12 +339,16 @@ public class MapGenerator : MonoBehaviour
 
     private void GenerateColliders(float[,] heightMap)
     {
-        if (meshCollider != null && meshFilter != null && meshFilter.mesh != null)
+        if (force2DColliders)
         {
-            meshCollider.sharedMesh = meshFilter.mesh;
-        }
-        else
-        {
+            // Remover MeshCollider se existir (não funciona com Rigidbody2D)
+            if (meshCollider != null)
+            {
+                DestroyImmediate(meshCollider);
+                meshCollider = null;
+            }
+
+            // Usar EdgeCollider2D para 2D
             EdgeCollider2D edgeCollider = GetComponent<EdgeCollider2D>();
             if (edgeCollider == null)
                 edgeCollider = gameObject.AddComponent<EdgeCollider2D>();
@@ -358,6 +363,11 @@ public class MapGenerator : MonoBehaviour
             }
 
             edgeCollider.points = points.ToArray();
+        }
+        else if (meshCollider != null && meshFilter != null && meshFilter.mesh != null)
+        {
+            // Usar MeshCollider para 3D
+            meshCollider.sharedMesh = meshFilter.mesh;
         }
     }
 
