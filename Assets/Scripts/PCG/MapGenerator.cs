@@ -12,24 +12,19 @@ public class TerrainType
 public class MapGenerator : MonoBehaviour
 {
     [Header("Map Settings")]
-    public int mapSize = 256;
-    public int seed = 0;
-    public bool autoUpdate = true;
+    [SerializeField] private int mapSize = 256;
+    [SerializeField] private int seed = 0;
+    [SerializeField] private bool autoUpdate = true;
 
     [Header("Midpoint Displacement Settings")]
-    [Range(0.1f, 2f)]
-    public float roughness = 0.7f;
-
-    [Range(0.1f, 5f)]
-    public float initialHeight = 1f;
-
-    [Range(0f, 1f)]
-    public float baseLevel = 0f;
+    [SerializeField, Range(0.1f, 2f)] private float roughness = 0.7f;
+    [SerializeField, Range(0.1f, 5f)] private float initialHeight = 1f;
+    [SerializeField, Range(0f, 1f)] private float baseLevel = 0f;
 
     [Header("Terrain Settings")]
-    public float mountainHeight = 1.5f;
-    public float terrainScale = 10f;
-    public TerrainType[] regions;
+    [SerializeField] private float mountainHeight = 1.5f;
+    [SerializeField] private float terrainScale = 10f;
+    [SerializeField] private TerrainType[] regions;
 
     [Header("Collision Settings")]
     public float colliderHeight = 1f;
@@ -37,13 +32,13 @@ public class MapGenerator : MonoBehaviour
     public bool force2DColliders = true;
 
     [Header("Mesh Settings")]
-    public Material terrainMaterial;
+    [SerializeField] private Material terrainMaterial;
 
     private MeshFilter meshFilter;
     private MeshRenderer meshRenderer;
     private MeshCollider meshCollider;
 
-    void Awake()
+    private void Awake()
     {
         if (regions == null || regions.Length == 0)
         {
@@ -51,13 +46,13 @@ public class MapGenerator : MonoBehaviour
         }
     }
 
-    void Start()
+    private void Start()
     {
         InitializeComponents();
         GenerateMap();
     }
 
-    void InitializeComponents()
+    private void InitializeComponents()
     {
         if (meshFilter == null)
             meshFilter = GetComponent<MeshFilter>();
@@ -328,10 +323,12 @@ public class MapGenerator : MonoBehaviour
             }
         }
 
-        Mesh mesh = new Mesh();
-        mesh.vertices = vertices;
-        mesh.triangles = triangles;
-        mesh.uv = uvs;
+        Mesh mesh = new Mesh
+        {
+            vertices = vertices,
+            triangles = triangles,
+            uv = uvs
+        };
         mesh.RecalculateNormals();
 
         meshFilter.mesh = mesh;
